@@ -10,7 +10,7 @@ export const loginCustomer = (data) => Http.post(`/customer/login`, data);
 export const registerCustomer = (data) => Http.post(`/customer/register`, data);
 export const updateCustomer = (data) => Http.post(`/customer/update`, data);
 export const getOrdersByCustomer = (id, config) => Http(`/customer/${id}/order`, config);
-export const cancalOrderByCustomer = (id, config) => Http.post(`/customer/${id}/order`, config);
 export const getOrderDetails = (id, config) => Http(`/customer/order/${id}`, config);
+export const canceledOrder = (id) => Http(`/customer/order/${id}/canceled`);
 export const order = (data) => Http.post("/order", data);
 export const getAds = (config) => Http(`/ads`, config);

@@ -289,6 +289,10 @@ body {
   margin: 0 0 0 auto;
 }
 
+.cart-item__cancel {
+  background-color: #e6c6c6;
+}
+
 /* End Cart Update */
 
 .customer-form {

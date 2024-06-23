@@ -8,3 +8,4 @@ export const { default: IconReplyComment } = require("./IconReplyComment");
 export const { default: IconTime } = require("./IconTime");
 export const { default: IconRobot } = require("./IconRobot");
 export const { default: IconCart } = require("./IconCart");
+export const { default: IconAddCart } = require("./IconAddCart");

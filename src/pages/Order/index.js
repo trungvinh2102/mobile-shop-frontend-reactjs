@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { getOrdersByCustomer, cancalOrderByCustomer } from '../../services/Api';
+import { getOrdersByCustomer, canceledOrder } from '../../services/Api';
 import { Link, useParams } from 'react-router-dom';
 import { formatPrice } from '../../shared/ultils';
 import { format } from 'date-fns';
+import Swal from "sweetalert2";
 
 const Order = () => {
   const [orders, setOrders] = useState([]);
+  const [sttOrder, setSttOrder] = useState("")
   const { id } = useParams();
 
   useEffect(() => {
@@ -22,20 +24,28 @@ const Order = () => {
   };
 
   const clickCancelOrder = async (orderId) => {
-    console.log("clickCancelOrder ~ orderId:", orderId);
-    try {
-      const result = await cancalOrderByCustomer(orderId);
-      console.log("clickCancelOrder ~ result:", result);
-      // Cập nhật trạng thái đơn hàng trong state
-      setOrders((prevOrders) =>
-        prevOrders.map(order =>
-          order._id === orderId ? { ...order, status: 0, is_delete: true } : order
-        )
-      );
-      console.log('Đơn hàng đã bị hủy:', result);
-    } catch (error) {
-      console.error('Lỗi khi hủy đơn hàng:', error);
-    }
+    Swal.fire({
+      title: "Bạn có chắc chắn muốn hủy đơn hàng không?",
+      text: "Sau khi hủy bạn sẽ không thẻ hoàn tác lại!!!",
+      icon: "warning",
+      showCancelButton: true,
+      cancelButtonText: 'Không',
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Có",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        canceledOrder(orderId)
+        setSttOrder(orderId);
+        setOrders(orders.map(order =>
+          order._id === orderId ? { ...order, status: 0 } : order
+        ));
+        Swal.fire({
+          title: "Hủy đơn hàng thành công!",
+          icon: "success",
+        });
+      }
+    });
   };
 
   return (
@@ -49,7 +59,7 @@ const Order = () => {
         <form method="post">
           {
             orders.map((order, index) => (
-              <div key={index} className="cart-item row">
+              <div key={index} className={`cart-item row ${order.status === 0 ? 'cart-item__cancel' : ''}`}>
                 <div className="cart-thumb col-lg-6 col-md-7 col-sm-12">
                   Đơn hàng đã mua vào ngày: <span className="text-secondary">{formatDate(order.createdAt)}</span>
                   <p>Mã Đơn (MĐ): {order._id}</p>
@@ -57,7 +67,7 @@ const Order = () => {
                 <div className="cart-price col-lg-3 col-md-2 col-sm-12">
                   <b>{formatPrice(order?.totalPrice)} đ</b>
                 </div>
-                <div className="cart-quantity col-lg-3 col-md-3 col-sm-12">
+                <div className='cart-quantity col-lg-3 col-md-3 col-sm-12'>
                   <Link to={`/OrderDetails-${order._id}`} type="button" className="mb-1 btn btn-outline-dark">
                     Chi tiết đơn hàng
                   </Link>

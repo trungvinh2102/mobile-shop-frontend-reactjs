@@ -8,6 +8,7 @@ import moment from "moment";
 import { toast } from 'react-toastify';
 import Heading from './../../shared/components/common/Heading';
 import {
+  IconAddCart,
   IconReplyComment,
   IconRobot,
   IconSend,
@@ -25,7 +26,8 @@ const ProductDetails = () => {
 
   const [product, setProduct] = useState({});
   const [comments, setComments] = useState([]);
-  const [inputComment, setInputComment] = useState({});
+  const [inputComment, setInputComment] = useState([]); // Lưu trữ là một mảng
+
   const [replyToCommentId, setReplyToCommentId] = useState(null);
   const [activeReplyCommentId, setActiveReplyCommentId] = useState(null);
   const [rootCommentId, setRootCommentId] = useState(null);
@@ -53,22 +55,24 @@ const ProductDetails = () => {
     toast.success('Thêm sản phẩm vào giỏ hàng thành công!');
   };
 
-  const onChangeInput = (e) => {
+  const onChangeInput = (e, index) => {
     const { name, value } = e.target;
-    setInputComment({ ...inputComment, [name]: value });
+    const newInputComment = [...inputComment]; // Tạo mảng mới từ inputComment
+    newInputComment[index] = { ...newInputComment[index], [name]: value }; // Cập nhật giá trị tại index
+    setInputComment(newInputComment); // Cập nhật state
   };
 
-  const onClickSubmit = (e) => {
+  const onClickSubmit = (e, index) => {
     e.preventDefault();
-    if (!inputComment.content || inputComment.content.trim() === "") {
+    if (!inputComment[index]?.content || inputComment[index]?.content.trim() === "") {
       toast.error('Nội dung bình luận không được để trống!');
       return;
     }
     if (customer) {
       const commentData = {
-        name: inputComment.name || customer.fullName,
-        email: inputComment.email || customer.email,
-        content: inputComment.content,
+        name: inputComment[index]?.name || customer.fullName,
+        email: inputComment[index]?.email || customer.email,
+        content: inputComment[index]?.content,
         parent_id: rootCommentId || replyToCommentId,
         root_comment_id: rootCommentId,
       };
@@ -76,11 +80,13 @@ const ProductDetails = () => {
       return createCommentProduct(id, commentData)
         .then(({ data }) => {
           if (data.status === "success") {
-            setInputComment({
+            const newInputComment = [...inputComment];
+            newInputComment[index] = {
               name: customer.fullName,
               email: customer.email,
               content: ""
-            });
+            };
+            setInputComment(newInputComment); // Cập nhật lại state
             getComments(id);
           }
           toast.success("Bình luận của bạn đã được gửi. Xin cảm ơn!")
@@ -92,7 +98,7 @@ const ProductDetails = () => {
     }
   }
 
-  const clickReplyComment = (parentId, rootCommentId) => {
+  const clickReplyComment = (parentId, rootCommentId, index) => {
     if (activeReplyCommentId === parentId) {
       setActiveReplyCommentId(null);
       setRootCommentId(null);
@@ -190,6 +196,7 @@ const ProductDetails = () => {
                   Mua ngay
                 </Button>
                 <Button onClick={clickAddToCart} className="btn btn-info">
+                  <IconAddCart />
                   Thêm vào giỏ hàng
                 </Button>
               </div>
@@ -288,13 +295,13 @@ const ProductDetails = () => {
                     required
                     rows={8}
                     className="reply-input__text"
-                    onChange={onChangeInput}
+                    onChange={(e) => onChangeInput(e, 0)} // Sử dụng onChangeInput với index 0
                     placeholder="Xin mời để lại câu hỏi hệ thống sẽ trả lời trong vòng 1h, chậm nhất 1 ngày làm việc 8h-22h trừ T7, CN, ngày lễ "
-                    value={inputComment.content || ""}
+                    value={inputComment[0]?.content || ""}
                   />
                 </form>
                 <div className="reply-input__meta">
-                  <Button onClick={onClickSubmit} type="submit" name="sbm" className="reply-input__btn">
+                  <Button onClick={(e) => onClickSubmit(e, 0)} type="submit" name="sbm" className="reply-input__btn">
                     <IconSend />
                     <p>Gửi</p>
                   </Button>
@@ -303,9 +310,9 @@ const ProductDetails = () => {
             </div>
           </div>
           {comments.map((comment, index) => (
-            <>
+            <React.Fragment key={index}>
               {/* Comment Parent */}
-              <div key={index} className="col-lg-12 col-md-12 col-sm-12 comment">
+              <div className="col-lg-12 col-md-12 col-sm-12 comment">
                 <div className="comment-item">
                   <div>
                     <div className="comment-item__info">
@@ -327,7 +334,7 @@ const ProductDetails = () => {
                   </div>
                 </div>
               </div>
-              {/* Comment Parent */}
+              {/* End Comment Parent */}
 
               {/* Click show box reply comment */}
               {activeReplyCommentId === comment._id && (
@@ -340,13 +347,13 @@ const ProductDetails = () => {
                         required
                         rows={8}
                         className="reply-input__text"
-                        onChange={onChangeInput}
+                        onChange={(e) => onChangeInput(e, index + 1)} // Sử dụng onChangeInput với index tương ứng
                         placeholder="Xin mời để lại câu hỏi hệ thống sẽ trả lời trong vòng 1h, chậm nhất 1 ngày làm việc 8h-22h trừ T7, CN, ngày lễ "
-                        value={inputComment.content || ""}
+                        value={inputComment[index + 1]?.content || ""}
                       />
                     </form>
                     <div className="reply-input__meta">
-                      <Button onClick={onClickSubmit} type="submit" name="sbm" className="reply-input__btn">
+                      <Button onClick={(e) => onClickSubmit(e, index + 1)} type="submit" name="sbm" className="reply-input__btn">
                         <IconSend />
                         <p>Gửi</p>
                       </Button>
@@ -358,8 +365,8 @@ const ProductDetails = () => {
 
               {/* Comment Reply (Child) */}
               {comment.replies && comment.replies.map((reply, replyIndex) => (
-                <>
-                  <div className="col-lg-12 col-md-12 col-sm-12 comment-list_reply" key={replyIndex}>
+                <React.Fragment key={replyIndex}>
+                  <div className="col-lg-12 col-md-12 col-sm-12 comment-list_reply">
                     <div className="comment-item">
                       <div>
                         <div className="comment-item__info">
@@ -391,13 +398,13 @@ const ProductDetails = () => {
                             required
                             rows={8}
                             className="reply-input__text"
-                            onChange={onChangeInput}
+                            onChange={(e) => onChangeInput(e, index + 1)} // Sử dụng onChangeInput với index tương ứng
                             placeholder="Xin mời để lại câu hỏi hệ thống sẽ trả lời trong vòng 1h, chậm nhất 1 ngày làm việc 8h-22h trừ T7, CN, ngày lễ "
-                            value={inputComment.content || ""}
+                            value={inputComment[index + 1]?.content || ""}
                           />
                         </form>
                         <div className="reply-input__meta">
-                          <Button onClick={onClickSubmit} type="submit" name="sbm" className="reply-input__btn">
+                          <Button onClick={(e) => onClickSubmit(e, index + 1)} type="submit" name="sbm" className="reply-input__btn">
                             <IconSend />
                             <p>Gửi</p>
                           </Button>
@@ -405,10 +412,10 @@ const ProductDetails = () => {
                       </div>
                     </div>
                   )}
-                </>
+                </React.Fragment>
               ))}
               {/* End Comment Reply (Child) */}
-            </>
+            </React.Fragment>
           ))}
         </div>
       </div>
@@ -421,3 +428,4 @@ const ProductDetails = () => {
   );
 };
 export default ProductDetails;
+
